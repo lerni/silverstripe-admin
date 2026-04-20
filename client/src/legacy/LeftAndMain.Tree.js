@@ -499,15 +499,23 @@ $.entwine('ss.tree', function($){
               // Check if node exists, create if necessary
               if (node.length) {
                 self.updateNode(node, nodeData.html, nodeData);
-              } else if (nodeData.ParentID) {
-                // Node not in tree. Recursively walk up ancestor chain
+              } else if (nodeData.ParentID && !self.find('li[data-id=' + nodeData.ParentID + ']').length) {
+                // Deep nesting: parent not loaded yet. Walk up ancestor chain
                 // until finding a loaded ancestor, then open each level down.
-                // This avoids load_node(-1) which collapses the entire tree
-                // and loses deep nodes when node_threshold_total is low.
+                // Avoids load_node(-1) which collapses the tree and loses deep
+                // nodes when node_threshold_total is low.
                 didAsyncLoad = true;
                 self.openToNode(nodeId, function() {
                   var targetNode = self.find('li[data-id=' + nodeId + ']');
                   self.expandTreeAndSelect(targetNode);
+                });
+              } else {
+                // Parent is in DOM (or node is top-level with ParentID=0):
+                // insert directly from server-provided HTML.
+                self.createNode(nodeData.html, nodeData, (createdNode) => {
+                  if (!selected.length && ids.length === 1) {
+                    selected = createdNode;
+                  }
                 });
               }
             });
